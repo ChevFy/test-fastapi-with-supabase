@@ -12,6 +12,21 @@ router = APIRouter(prefix="/todos",tags=["todos"])
 def list_all_todos(db : Session = Depends(get_db)):
     return db.query(TodoDB).all()
 
-@router.post("/")
-def create_todo():
-    pass
+@router.post("/", response_model=TodoResponse)
+def create_todo(todo : TodoCreate , db : Session = Depends(get_db)):
+    db_todo = TodoDB(**todo.model_dump())
+    db.add(db_todo)
+    db.commit()
+    db.refresh(db_todo)
+    return db_todo
+
+@router.delete("/{id}")
+def delete_todo_by_id(id : int , db : Session = Depends(get_db)):
+    db_todo = db.query(TodoDB).filter(TodoDB.id ==  id).first()
+    if db_todo is None:
+        raise HTTPException(status_code=404, detail="Item not found")
+    db.delete(db_todo)
+    db.commit()
+    return { "todo was deleted"}
+
+    
